@@ -1,4 +1,5 @@
-local DiscordWebhook = 'WEBHOOK_HERE'
+--local DiscordWebhook = 'WEBHOOK_HERE'
+local DiscordWebhook = 'https://discordapp.com/api/webhooks/395395074759983104/q5p6E1umsXbXnME6IMihyDUtBcYJCKPJyXfrqoRbY3m4Kh33f8jcwoQw0k7wJACIJZu8'
 
 local UserAvatar = 'https://i.imgur.com/KIcqSYs.png'
 
@@ -56,7 +57,7 @@ AddEventHandler('playerDropped', function(Reason)
 end)
 
 RegisterServerEvent('PlayerDied')
-AddEventHandler('PlayerDied', function(Message)
+AddEventHandler('PlayerDied', function(Message, Weapon)
 	local date = os.date('*t')
 	
 	if date.day < 10 then date.day = '0' .. tostring(date.day) end
@@ -64,7 +65,10 @@ AddEventHandler('PlayerDied', function(Message)
 	if date.hour < 10 then date.hour = '0' .. tostring(date.hour) end
 	if date.min < 10 then date.min = '0' .. tostring(date.min) end
 	if date.sec < 10 then date.sec = '0' .. tostring(date.sec) end
-	ToDiscord(SystemName, Message .. ' **(' .. date.day .. '.' .. date.month .. '.' .. date.year .. ' - ' .. date.hour .. ':' .. date.min .. ':' .. date.sec .. ')**')
+	if Weapon then
+		Message = Message .. ' [' .. Weapon .. ']'
+	end
+	ToDiscord(SystemName, Message .. ' `' .. date.day .. '.' .. date.month .. '.' .. date.year .. ' - ' .. date.hour .. ':' .. date.min .. ':' .. date.sec .. '`')
 end)
 
 function ToDiscord(Name, Message, Image)
@@ -136,7 +140,7 @@ end
 
 -- Version Checking down here, better don't touch
 
-local CurrentVersion = '1.1.0'
+local CurrentVersion = '1.2.0'
 
 PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/DiscordBot_Resources/master/VERSION', function(Error, NewestVersion, Header)
 	PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/DiscordBot_Resources/master/CHANGES', function(Error, Changes, Header)

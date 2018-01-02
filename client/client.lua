@@ -1,5 +1,3 @@
-local DeathReason, Killer, DeathCauseHash
-
 local WeaponNames = {
     [tostring(GetHashKey('WEAPON_UNARMED'))] = 'Unarmed',
     [tostring(GetHashKey('WEAPON_KNIFE'))] = 'Knife',
@@ -110,11 +108,15 @@ local WeaponNames = {
 }
 
 Citizen.CreateThread(function()
+	local DeathReason, Killer, DeathCauseHash, Weapon
+
 	while true do
 		Citizen.Wait(0)
-		if IsPlayerDead(PlayerId()) then
+		if IsEntityDead(PlayerPedId()) then
+			Citizen.Wait(500)
 			local PedKiller = GetPedSourceOfDeath(PlayerPedId())
 			DeathCauseHash = GetPedCauseOfDeath(PlayerPedId())
+			Weapon = WeaponNames[tostring(DeathCauseHash)]
 
 			if IsPedAPlayer(PedKiller) then
 				Killer = NetworkGetPlayerIndexFromPed(PedKiller)
@@ -175,20 +177,20 @@ Citizen.CreateThread(function()
 					DeathReason = 'killed'
 				end
 			end
+			
+			if DeathReason == 'committed suicide' or DeathReason == 'died' then
+				TriggerServerEvent('PlayerDied', GetPlayerName(PlayerId()) .. ' ' .. DeathReason .. '.', Weapon)
+			else
+				TriggerServerEvent('PlayerDied', GetPlayerName(Killer) .. ' ' .. DeathReason .. ' ' .. GetPlayerName(PlayerId()) .. '.', Weapon)
+			end
+			Killer = nil
+			DeathReason = nil
+			DeathCauseHash = nil
+			Weapon = nil
 		end
-	end
-end)
-
-AddEventHandler('playerSpawned', function(spawn)
-	if DeathReason then
-		if DeathReason == 'committed suicide' or DeathReason == 'died' then
-			TriggerServerEvent('PlayerDied', GetPlayerName(PlayerId()) .. ' ' .. DeathReason .. '.', WeaponNames[tostring(DeathCauseHash)])
-		else
-			TriggerServerEvent('PlayerDied', GetPlayerName(Killer) .. ' ' .. DeathReason .. ' ' .. GetPlayerName(PlayerId()) .. '.', WeaponNames[tostring(DeathCauseHash)])
+		while IsEntityDead(PlayerPedId()) do
+			Citizen.Wait(0)
 		end
-		Killer = nil
-		DeathReason = nil
-		DeathCauseHash = nil
 	end
 end)
 

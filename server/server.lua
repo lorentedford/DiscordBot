@@ -1,5 +1,7 @@
---local DiscordWebhook = 'WEBHOOK_HERE'
-local DiscordWebhook = 'https://discordapp.com/api/webhooks/395395074759983104/q5p6E1umsXbXnME6IMihyDUtBcYJCKPJyXfrqoRbY3m4Kh33f8jcwoQw0k7wJACIJZu8'
+--local DiscordWebhook = 'WEBHOOK_LINK_HERE'
+local DiscordWebhook = 'https://discordapp.com/api/webhooks/397531505791991819/9B8R9uR_sw7G2KoiB5eN1EbtplImBMd3WQNWjVe6BY8y2pLUa3xjCT7K3znOrFO_B1PW'
+
+local SystemAvatar = 'https://wiki.fivem.net/w/images/d/db/FiveM-Wiki.png'
 
 local UserAvatar = 'https://i.imgur.com/KIcqSYs.png'
 
@@ -49,11 +51,11 @@ AddEventHandler('chatMessage', function(Source, Name, Message)
 end)
 
 AddEventHandler('playerConnecting', function()
-	ToDiscord(SystemName, '```css\n' .. GetPlayerName(source) .. ' connecting\n```')
+	ToDiscord(SystemName, '```css\n' .. GetPlayerName(source) .. ' connecting\n```', SystemAvatar)
 end)
 
 AddEventHandler('playerDropped', function(Reason)
-	ToDiscord(SystemName, '```fix\n' .. GetPlayerName(source) .. ' left (' .. Reason .. ')\n```')
+	ToDiscord(SystemName, '```fix\n' .. GetPlayerName(source) .. ' left (' .. Reason .. ')\n```', SystemAvatar)
 end)
 
 RegisterServerEvent('PlayerDied')
@@ -68,7 +70,7 @@ AddEventHandler('PlayerDied', function(Message, Weapon)
 	if Weapon then
 		Message = Message .. ' [' .. Weapon .. ']'
 	end
-	ToDiscord(SystemName, Message .. ' `' .. date.day .. '.' .. date.month .. '.' .. date.year .. ' - ' .. date.hour .. ':' .. date.min .. ':' .. date.sec .. '`')
+	ToDiscord(SystemName, Message .. ' `' .. date.day .. '.' .. date.month .. '.' .. date.year .. ' - ' .. date.hour .. ':' .. date.min .. ':' .. date.sec .. '`', SystemAvatar)
 end)
 
 function ToDiscord(Name, Message, Image)
@@ -76,11 +78,7 @@ function ToDiscord(Name, Message, Image)
 		return false
 	end
 	
-	if Image then
-		PerformHttpRequest(DiscordWebhook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image}), { ['Content-Type'] = 'application/json' })
-	else
-		PerformHttpRequest(DiscordWebhook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message}), { ['Content-Type'] = 'application/json' })
-	end
+	PerformHttpRequest(DiscordWebhook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image}), { ['Content-Type'] = 'application/json' })
 end
 
 function IsBlacklistedCommand(String)
@@ -140,7 +138,7 @@ end
 
 -- Version Checking down here, better don't touch
 
-local CurrentVersion = '1.2.0'
+local CurrentVersion = '1.3.1'
 
 PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/DiscordBot_Resources/master/VERSION', function(Error, NewestVersion, Header)
 	PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/DiscordBot_Resources/master/CHANGES', function(Error, Changes, Header)

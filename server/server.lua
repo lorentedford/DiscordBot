@@ -46,7 +46,22 @@ AddEventHandler('chatMessage', function(Source, Name, Message)
 	end
 	
 	if not IsBlacklistedCommand(Message) then
-		ToDiscord(Name .. ' [ ServerID: ' .. Source .. ' ]', newMessage, UserAvatar)
+		if GetIDFromSource('steam', Source) then
+			local SteamIDHex = GetIDFromSource('steam', Source)
+			local SteamIDInt = tonumber(SteamIDHex, 16)
+			local AvatarURL
+			PerformHttpRequest('http://steamcommunity.com/profiles/' .. SteamIDInt .. '/?xml=1', function(Error, Content, Head)
+				local SteamProfileInfosSplitted = stringsplit(Content, '\n')
+				for i, Info in ipairs(SteamProfileInfosSplitted) do
+					if Info:find('<avatarFull>') then
+						local AvatarURL = Info:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
+						ToDiscord(Name .. ' [ ServerID: ' .. Source .. ' ]', newMessage, AvatarURL)
+					end
+				end
+			end)
+		else
+			ToDiscord(Name .. ' [ ServerID: ' .. Source .. ' ]', newMessage, AvatarURL)
+		end
 	end
 end)
 
@@ -134,6 +149,17 @@ function stringsplit(input, seperator)
 	end
 	
 	return t
+end
+
+function GetIDFromSource(Type, ID) --(Thanks To WolfKnight [forum.FiveM.net])
+    local IDs = GetPlayerIdentifiers(ID)
+    for k, CurrentID in pairs(IDs) do
+        local ID = stringsplit(CurrentID, ':')
+        if (ID[1]:lower() == string.lower(Type)) then
+            return ID[2]:lower()
+        end
+    end
+    return nil
 end
 
 -- Version Checking down here, better don't touch

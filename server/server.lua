@@ -40,6 +40,12 @@ AddEventHandler('chatMessage', function(Source, Name, Message)
 	end
 	
 	local newMessage = Message
+	local newName = Name
+	
+	for i = 0, 9 do
+		newMessage = newMessage:gsub('%^' .. i, '')
+		newName = newName:gsub('%^' .. i, '')
+	end
 	
 	if IsSpecialCommand(newMessage) then
 		newMessage = ReplaceSpecialCommand(newMessage, Source)
@@ -56,6 +62,7 @@ AddEventHandler('chatMessage', function(Source, Name, Message)
 					if Info:find('<avatarFull>') then
 						local AvatarURL = Info:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
 						ToDiscord(Name .. ' [ ServerID: ' .. Source .. ' ]', newMessage, AvatarURL)
+						break
 					end
 				end
 			end)
@@ -164,7 +171,7 @@ end
 
 -- Version Checking down here, better don't touch
 
-local CurrentVersion = '1.3.1'
+local CurrentVersion = '1.3.3'
 
 PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/DiscordBot_Resources/master/VERSION', function(Error, NewestVersion, Header)
 	PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/DiscordBot_Resources/master/CHANGES', function(Error, Changes, Header)

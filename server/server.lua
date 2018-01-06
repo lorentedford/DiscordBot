@@ -1,5 +1,4 @@
---local DiscordWebhook = 'WEBHOOK_LINK_HERE'
-local DiscordWebhook = 'https://discordapp.com/api/webhooks/397531505791991819/9B8R9uR_sw7G2KoiB5eN1EbtplImBMd3WQNWjVe6BY8y2pLUa3xjCT7K3znOrFO_B1PW'
+local DiscordWebhook = 'WEBHOOK_LINK_HERE'
 
 local SystemAvatar = 'https://wiki.fivem.net/w/images/d/db/FiveM-Wiki.png'
 

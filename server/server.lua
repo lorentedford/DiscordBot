@@ -180,15 +180,13 @@ PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResou
 end)
 
 
--- Instant Update down here, better don't touch this neither
+-- Instant Update down here, better don't touch this as well
 
 AddEventHandler('rconCommand', function(CMDName, Arguments)
     if CMDName:lower() == 'update' then
 		if #Arguments == 1 then
 			if Arguments[1]:lower() == GetCurrentResourceName():lower() then
 				TriggerEvent(GetCurrentResourceName() .. ':StartUpdate')
-			else
-				print('"' .. Arguments[1] .. '" is no known resource!')
 			end
 		else
 			print('Argument count mismatch (Passed: ' .. #Arguments .. ', Wanted: 1)')
@@ -236,3 +234,21 @@ function stringsplit(input, seperator)
 	return t
 end
 
+function loadLuaFile(resource, file)
+    return load(LoadResourceFile(resource, file), file)()
+end
+
+-- Error Check
+if DiscordWebhookSystemInfos == nil and DiscordWebhookKillinglogs == nil and DiscordWebhookChat == nil then
+	loadLuaFile(GetCurrentResourceName(), 'config.lua')
+end
+if DiscordWebhookSystemInfos == 'WEBHOOK_LINK_HERE' then
+	print(GetCurrentResourceName() .. ': Please add your "System Infos" Webhook')
+end
+if DiscordWebhookKillinglogs == 'WEBHOOK_LINK_HERE' then
+	print(GetCurrentResourceName() .. ': Please add your "Killing Log" Webhook')
+end
+if DiscordWebhookChat == 'WEBHOOK_LINK_HERE' then
+	print(GetCurrentResourceName() .. ': Please add your "Chat" Webhook')
+end
+	

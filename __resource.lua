@@ -7,4 +7,3 @@ server_script {						-- Server Scripts
 	'config.lua',
 }
 client_script 'client/client.lua'	-- Client Script
-

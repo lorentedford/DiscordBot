@@ -173,7 +173,7 @@ end
 
 -- Version Checking down here, better don't touch this
 
-local CurrentVersion = '1.4.1'
+local CurrentVersion = '1.4.2'
 local UpdateAvailable = false
 local GithubResourceName = 'DiscordBot'
 

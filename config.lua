@@ -35,4 +35,3 @@ BlacklistedCommands = {
 					   '/fix',
 					   '/revive',
 					  }
-

@@ -1,5 +1,5 @@
-DiscordWebhookKillinglogs = 'WEBHOOK_LINK_HERE'
 DiscordWebhookSystemInfos = 'WEBHOOK_LINK_HERE'
+DiscordWebhookKillinglogs = 'WEBHOOK_LINK_HERE'
 DiscordWebhookChat = 'WEBHOOK_LINK_HERE'
 
 SystemAvatar = 'https://wiki.fivem.net/w/images/d/db/FiveM-Wiki.png'

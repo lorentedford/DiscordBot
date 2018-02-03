@@ -94,6 +94,42 @@ AddEventHandler('chatMessage', function(Source, Name, Message)
 	end
 end)
 
+for k, CommandNotPrinting in ipairs(CommandsNotPrinting) do
+	RegisterCommand(CommandNotPrinting[1], function(Source, Arguments, rawCommand)
+		local Message = CommandNotPrinting[1]
+		
+		for i = 1, #Arguments do
+			Message = Message .. ' ' .. Arguments[i]
+		end
+	
+		for i = 0, 9 do
+			Message = Message:gsub('%^' .. i, '')
+			Name = GetPlayerName(Source):gsub('%^' .. i, '')
+		end
+		
+		if not IsBlacklistedCommand(Message) then
+			Message = ReplaceSpecialCommandNotShowing(Message, Source)
+
+			if GetIDFromSource('steam', Source) then
+				local SteamIDHex = GetIDFromSource('steam', Source)
+				local SteamIDInt = tonumber(SteamIDHex, 16)
+				local AvatarURL
+				PerformHttpRequest('http://steamcommunity.com/profiles/' .. SteamIDInt .. '/?xml=1', function(Error, Content, Head)
+					local SteamProfileInfosSplitted = stringsplit(Content, '\n')
+					for i, Info in ipairs(SteamProfileInfosSplitted) do
+						if Info:find('<avatarFull>') then
+							local AvatarURL = Info:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
+							ToDiscord(DiscordWebhookChat, Name .. ' [ ServerID: ' .. Source .. ' ]', Message, AvatarURL)
+							break
+						end
+					end
+				end)
+			else
+				ToDiscord(DiscordWebhookChat, Name .. ' [ ServerID: ' .. Source .. ' ]', Message, AvatarURL)
+			end
+		end
+	end, false)
+end
 -- Functions
 
 function ToDiscord(Type, Name, Message, Image)
@@ -144,6 +180,26 @@ function ReplaceSpecialCommand(String, Source)
 	end
 end
 
+function ReplaceSpecialCommandNotShowing(String, Source)
+	local StringSplitted = stringsplit(String, ' ')
+	for i, CommandNotPrinting in ipairs(CommandsNotPrinting) do
+		if StringSplitted[1]:lower() == CommandNotPrinting[1]:lower() then
+			StringSplitted[1] = CommandNotPrinting[2]
+			local newString = ''
+			for k, StringPart in ipairs(StringSplitted) do
+				if newString == '' then
+					newString = StringPart
+				else
+					newString = newString .. ' ' .. StringPart
+				end
+			end
+			newString = newString:gsub('USERNAME_NEEDED_HERE', GetPlayerName(Source))
+			newString = newString:gsub('USERID_NEEDED_HERE', Source)
+			return newString
+		end
+	end
+end
+
 function stringsplit(input, seperator)
 	if seperator == nil then
 		seperator = '%s'
@@ -173,7 +229,7 @@ end
 
 -- Version Checking down here, better don't touch this
 
-local CurrentVersion = '1.4.2'
+local CurrentVersion = '1.4.3'
 local UpdateAvailable = false
 local GithubResourceName = 'DiscordBot'
 

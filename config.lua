@@ -1,5 +1,5 @@
-DiscordWebhookSystemInfos = 'WEBHOOK_LINK_HERE'
 DiscordWebhookKillinglogs = 'WEBHOOK_LINK_HERE'
+DiscordWebhookSystemInfos = 'WEBHOOK_LINK_HERE'
 DiscordWebhookChat = 'WEBHOOK_LINK_HERE'
 
 SystemAvatar = 'https://wiki.fivem.net/w/images/d/db/FiveM-Wiki.png'
@@ -22,6 +22,14 @@ SystemName = 'SYSTEM'
 -- Use 'USERNAME_NEEDED_HERE' without the quotes if you need a Users Name in a special command
 -- Use 'USERID_NEEDED_HERE' without the quotes if you need a Users ID in a special command
 
+
+-- Commands which are not printing have to be added here to be printed
+-- Add it without the "/", for an example look below ({'car'..., {'ooc'..., {'announce'...)
+CommandsNotPrinting = {
+					   {'car', '/car'}, 
+					   {'ooc', '**[OOC]:**'}, 
+					   {'announce', '**[ANNOUNCEMENT]:**'}, 
+					  }
 
 -- These Special Commands will be printed differently in Discord, depending on what you set it to
 SpecialCommands = {

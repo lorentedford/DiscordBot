@@ -1,3 +1,28 @@
+-- YOU JUST HAVE TO EDIT THE CONFIG.LUA!
+
+-- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE!
+-- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE!
+-- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE!
+-- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE!
+-- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE!
+-- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE!
+
+-- Error Check
+if DiscordWebhookSystemInfos == nil and DiscordWebhookKillinglogs == nil and DiscordWebhookChat == nil then
+	local Content = LoadResourceFile(GetCurrentResourceName(), 'config.lua')
+	Content = load(Content)
+	Content()
+end
+if DiscordWebhookSystemInfos == 'WEBHOOK_LINK_HERE' then
+	print(GetCurrentResourceName() .. ': Please add your "System Infos" Webhook')
+end
+if DiscordWebhookKillinglogs == 'WEBHOOK_LINK_HERE' then
+	print(GetCurrentResourceName() .. ': Please add your "Killing Log" Webhook')
+end
+if DiscordWebhookChat == 'WEBHOOK_LINK_HERE' then
+	print(GetCurrentResourceName() .. ': Please add your "Chat" Webhook')
+end
+	
 -- System Infos
 
 PerformHttpRequest(DiscordWebhookSystemInfos, function(Error, Content, Head) end, 'POST', json.encode({username = SystemName, content = '**FiveM Server Webhook Started**'}), { ['Content-Type'] = 'application/json' })
@@ -58,17 +83,16 @@ AddEventHandler('chatMessage', function(Source, Name, Message)
 				for i, Info in ipairs(SteamProfileInfosSplitted) do
 					if Info:find('<avatarFull>') then
 						local AvatarURL = Info:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
-						ToDiscord(DiscordWebhookChat, Name .. ' [ ServerID: ' .. Source .. ' ]', newMessage, AvatarURL)
+						ToDiscord(DiscordWebhookChat, newName .. ' [ ServerID: ' .. Source .. ' ]', newMessage, AvatarURL)
 						break
 					end
 				end
 			end)
 		else
-			ToDiscord(DiscordWebhookChat, Name .. ' [ ServerID: ' .. Source .. ' ]', newMessage, AvatarURL)
+			ToDiscord(DiscordWebhookChat, newName .. ' [ ServerID: ' .. Source .. ' ]', newMessage, AvatarURL)
 		end
 	end
 end)
-
 
 -- Functions
 
@@ -149,7 +173,7 @@ end
 
 -- Version Checking down here, better don't touch this
 
-local CurrentVersion = '1.4.0'
+local CurrentVersion = '1.4.1'
 local UpdateAvailable = false
 local GithubResourceName = 'DiscordBot'
 
@@ -163,10 +187,16 @@ PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResou
 		print('#####                   Newest Version: ' .. NewestVersion .. '                  #####')
 		print('####################################################################')
 		if CurrentVersion ~= NewestVersion then
-			UpdateAvailable = true
+			PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResourceName .. '_Resources/master/PREVIOUSVERSION', function(Error, PreviousVersion, Header)
+				if CurrentVersion == PreviousVersion then
+					UpdateAvailable = true
+				end
+			end)
 			print('############################# Outdated #############################')
 			print('######################### Check the Topic ##########################')
-			print('################### Or type "update ' .. GetCurrentResourceName() .. '" ###################')
+			if UpdateAvailable then
+				print('################### Or type "update ' .. GetCurrentResourceName() .. '" ###################')
+			end
 			print('##################### For the newest Version! ######################')
 			print('####################################################################')
 			print('CHANGES: ' .. Changes)
@@ -234,21 +264,3 @@ function stringsplit(input, seperator)
 	return t
 end
 
-function loadLuaFile(resource, file)
-    return load(LoadResourceFile(resource, file), file)()
-end
-
--- Error Check
-if DiscordWebhookSystemInfos == nil and DiscordWebhookKillinglogs == nil and DiscordWebhookChat == nil then
-	loadLuaFile(GetCurrentResourceName(), 'config.lua')
-end
-if DiscordWebhookSystemInfos == 'WEBHOOK_LINK_HERE' then
-	print(GetCurrentResourceName() .. ': Please add your "System Infos" Webhook')
-end
-if DiscordWebhookKillinglogs == 'WEBHOOK_LINK_HERE' then
-	print(GetCurrentResourceName() .. ': Please add your "Killing Log" Webhook')
-end
-if DiscordWebhookChat == 'WEBHOOK_LINK_HERE' then
-	print(GetCurrentResourceName() .. ': Please add your "Chat" Webhook')
-end
-	

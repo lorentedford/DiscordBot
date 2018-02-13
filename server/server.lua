@@ -1,4 +1,6 @@
--- YOU JUST HAVE TO EDIT THE CONFIG.LUA!
+-- JUST EDIT THE CONFIG.LUA! -- JUST EDIT THE CONFIG.LUA! -- JUST EDIT THE CONFIG.LUA! -- JUST EDIT THE CONFIG.LUA!
+-- JUST EDIT THE CONFIG.LUA! -- JUST EDIT THE CONFIG.LUA! -- JUST EDIT THE CONFIG.LUA! -- JUST EDIT THE CONFIG.LUA!
+-- JUST EDIT THE CONFIG.LUA! -- JUST EDIT THE CONFIG.LUA! -- JUST EDIT THE CONFIG.LUA! -- JUST EDIT THE CONFIG.LUA!
 
 -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE!
 -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE! -- DO NOT EDIT THESE!
@@ -14,17 +16,34 @@ if DiscordWebhookSystemInfos == nil and DiscordWebhookKillinglogs == nil and Dis
 	Content()
 end
 if DiscordWebhookSystemInfos == 'WEBHOOK_LINK_HERE' then
-	print(GetCurrentResourceName() .. ': Please add your "System Infos" Webhook')
+	print('\n\nERROR\n' .. GetCurrentResourceName() .. ': Please add your "System Infos" Webhook\n\n')
+else
+	PerformHttpRequest(DiscordWebhookSystemInfos, function(Error, Content, Head)
+		if Content == '{"code": 50027, "message": "Invalid Webhook Token"}' then
+			print('\n\nERROR\n' .. GetCurrentResourceName() .. ': "System Infos" Webhook non-existing!\n\n')
+		end
+	end)
 end
 if DiscordWebhookKillinglogs == 'WEBHOOK_LINK_HERE' then
-	print(GetCurrentResourceName() .. ': Please add your "Killing Log" Webhook')
+	print('\n\nERROR\n' .. GetCurrentResourceName() .. ': Please add your "Killing Log" Webhook\n\n')
+else
+	PerformHttpRequest(DiscordWebhookKillinglogs, function(Error, Content, Head)
+		if Content == '{"code": 50027, "message": "Invalid Webhook Token"}' then
+			print('\n\nERROR\n' .. GetCurrentResourceName() .. ': "Killing Log" Webhook non-existing!\n\n')
+		end
+	end)
 end
 if DiscordWebhookChat == 'WEBHOOK_LINK_HERE' then
-	print(GetCurrentResourceName() .. ': Please add your "Chat" Webhook')
+	print('\n\nERROR\n' .. GetCurrentResourceName() .. ': Please add your "Chat" Webhook\n\n')
+else
+	PerformHttpRequest(DiscordWebhookChat, function(Error, Content, Head)
+		if Content == '{"code": 50027, "message": "Invalid Webhook Token"}' then
+			print('\n\nERROR\n' .. GetCurrentResourceName() .. ': "Chat" Webhook non-existing!\n\n')
+		end
+	end)
 end
 	
 -- System Infos
-
 PerformHttpRequest(DiscordWebhookSystemInfos, function(Error, Content, Head) end, 'POST', json.encode({username = SystemName, content = '**FiveM Server Webhook Started**'}), { ['Content-Type'] = 'application/json' })
 
 AddEventHandler('playerConnecting', function()
@@ -37,7 +56,6 @@ end)
 
 
 -- Killing Log
-
 RegisterServerEvent('PlayerDied')
 AddEventHandler('PlayerDied', function(Message, Weapon)
 	local date = os.date('*t')
@@ -55,106 +73,70 @@ end)
 
 
 -- Chat
-
 AddEventHandler('chatMessage', function(Source, Name, Message)
-	if Message == nil or Message == '' then
-		return false
-	end
-	
-	local newMessage = Message
-	local newName = Name
-	
+	--Removing Color Codes (^0, ^1, ^2 etc.) from the name and the message
 	for i = 0, 9 do
-		newMessage = newMessage:gsub('%^' .. i, '')
-		newName = newName:gsub('%^' .. i, '')
+		Message = Message:gsub('%^' .. i, '')
+		Name = Name:gsub('%^' .. i, '')
 	end
 	
-	if IsSpecialCommand(newMessage) then
-		newMessage = ReplaceSpecialCommand(newMessage, Source)
+	--Checking if the message contains a special command
+	if IsCommand(Message, 'Special') then
+		Message = ReplaceSpecialCommand(Message, Source)
 	end
 	
-	if not IsBlacklistedCommand(Message) then
+	--Checking if the message contains a blacklisted command
+	if not IsCommand(Message, 'Blacklisted') then
+	
+		--Getting the steam avatar
+		local AvatarURL = UserAvatar
 		if GetIDFromSource('steam', Source) then
 			local SteamIDHex = GetIDFromSource('steam', Source)
 			local SteamIDInt = tonumber(SteamIDHex, 16)
-			local AvatarURL
 			PerformHttpRequest('http://steamcommunity.com/profiles/' .. SteamIDInt .. '/?xml=1', function(Error, Content, Head)
 				local SteamProfileInfosSplitted = stringsplit(Content, '\n')
 				for i, Info in ipairs(SteamProfileInfosSplitted) do
 					if Info:find('<avatarFull>') then
 						local AvatarURL = Info:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
-						ToDiscord(DiscordWebhookChat, newName .. ' [ ServerID: ' .. Source .. ' ]', newMessage, AvatarURL)
 						break
 					end
 				end
 			end)
-		else
-			ToDiscord(DiscordWebhookChat, newName .. ' [ ServerID: ' .. Source .. ' ]', newMessage, AvatarURL)
 		end
+		
+		-- Shortens the Name, if needed
+		if Name:len() > 23 then
+			Name = Name:sub(1, 23)
+		end
+
+		--Sending the message to discord
+		ToDiscord(DiscordWebhookChat, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL)
 	end
 end)
 
-for k, CommandNotPrinting in ipairs(CommandsNotPrinting) do
-	RegisterCommand(CommandNotPrinting[1], function(Source, Arguments, rawCommand)
-		local Message = CommandNotPrinting[1]
-		
-		for i = 1, #Arguments do
-			Message = Message .. ' ' .. Arguments[i]
-		end
-	
-		for i = 0, 9 do
-			Message = Message:gsub('%^' .. i, '')
-			Name = GetPlayerName(Source):gsub('%^' .. i, '')
-		end
-		
-		if not IsBlacklistedCommand(Message) then
-			Message = ReplaceSpecialCommandNotShowing(Message, Source)
-
-			if GetIDFromSource('steam', Source) then
-				local SteamIDHex = GetIDFromSource('steam', Source)
-				local SteamIDInt = tonumber(SteamIDHex, 16)
-				local AvatarURL
-				PerformHttpRequest('http://steamcommunity.com/profiles/' .. SteamIDInt .. '/?xml=1', function(Error, Content, Head)
-					local SteamProfileInfosSplitted = stringsplit(Content, '\n')
-					for i, Info in ipairs(SteamProfileInfosSplitted) do
-						if Info:find('<avatarFull>') then
-							local AvatarURL = Info:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
-							ToDiscord(DiscordWebhookChat, Name .. ' [ ServerID: ' .. Source .. ' ]', Message, AvatarURL)
-							break
-						end
-					end
-				end)
-			else
-				ToDiscord(DiscordWebhookChat, Name .. ' [ ServerID: ' .. Source .. ' ]', Message, AvatarURL)
-			end
-		end
-	end, false)
-end
 -- Functions
 
-function ToDiscord(Type, Name, Message, Image)
+function ToDiscord(WebHook, Name, Message, Image)
 	if Message == nil or Message == '' then
 		return false
 	end
 	
-	PerformHttpRequest(Type, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image}), { ['Content-Type'] = 'application/json' })
+	PerformHttpRequest(WebHook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image}), { ['Content-Type'] = 'application/json' })
 end
 
-function IsBlacklistedCommand(String)
-	local newStringSplitted = stringsplit(String, ' ')
-	for i, BlacklistedCommand in ipairs(BlacklistedCommands) do
-		if newStringSplitted[1]:lower() == BlacklistedCommand:lower() then
-			return true
+function IsCommand(String, Type)
+	local StringSplitted = stringsplit(String, ' ')
+	if Type == 'Blacklisted' then
+		for i, BlacklistedCommand in ipairs(BlacklistedCommands) do
+			if StringSplitted[1]:lower() == BlacklistedCommand:lower() then
+				return true
+			end
 		end
-	end
-	return false
-end
-
-function IsSpecialCommand(String)
-	local newStringSplitted = stringsplit(String, ' ')
-	for i, SpecialCommand in ipairs(SpecialCommands) do
-		if newStringSplitted[1]:lower() == SpecialCommand[1]:lower() then
-			return true
+	elseif Type == 'Special' then
+		for i, SpecialCommand in ipairs(SpecialCommands) do
+			if StringSplitted[1]:lower() == SpecialCommand[1]:lower() then
+				return true
+			end
 		end
 	end
 	return false
@@ -165,26 +147,6 @@ function ReplaceSpecialCommand(String, Source)
 	for i, SpecialCommand in ipairs(SpecialCommands) do
 		if StringSplitted[1]:lower() == SpecialCommand[1]:lower() then
 			StringSplitted[1] = SpecialCommand[2]
-			local newString = ''
-			for k, StringPart in ipairs(StringSplitted) do
-				if newString == '' then
-					newString = StringPart
-				else
-					newString = newString .. ' ' .. StringPart
-				end
-			end
-			newString = newString:gsub('USERNAME_NEEDED_HERE', GetPlayerName(Source))
-			newString = newString:gsub('USERID_NEEDED_HERE', Source)
-			return newString
-		end
-	end
-end
-
-function ReplaceSpecialCommandNotShowing(String, Source)
-	local StringSplitted = stringsplit(String, ' ')
-	for i, CommandNotPrinting in ipairs(CommandsNotPrinting) do
-		if StringSplitted[1]:lower() == CommandNotPrinting[1]:lower() then
-			StringSplitted[1] = CommandNotPrinting[2]
 			local newString = ''
 			for k, StringPart in ipairs(StringSplitted) do
 				if newString == '' then
@@ -226,9 +188,7 @@ function GetIDFromSource(Type, ID) --(Thanks To WolfKnight [forum.FiveM.net])
     return nil
 end
 
-
 -- Version Checking down here, better don't touch this
-
 local CurrentVersion = '1.4.3'
 local UpdateAvailable = false
 local GithubResourceName = 'DiscordBot'
@@ -265,9 +225,7 @@ PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResou
 	end)
 end)
 
-
 -- Instant Update down here, better don't touch this as well
-
 AddEventHandler('rconCommand', function(CMDName, Arguments)
     if CMDName:lower() == 'update' then
 		if #Arguments == 1 then
@@ -302,21 +260,4 @@ AddEventHandler(GetCurrentResourceName() .. ':StartUpdate', function()
 		print('This is already the newest version! [' .. CurrentVersion .. ']')
 	end
 end)
-
--- Functions
-
-function stringsplit(input, seperator)
-	if seperator == nil then
-		seperator = '%s'
-	end
-	
-	local t={} ; i=1
-	
-	for str in string.gmatch(input, '([^'..seperator..']+)') do
-		t[i] = str
-		i = i + 1
-	end
-	
-	return t
-end
 

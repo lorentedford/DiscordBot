@@ -23,14 +23,6 @@ SystemName = 'SYSTEM'
 -- Use 'USERID_NEEDED_HERE' without the quotes if you need a Users ID in a special command
 
 
--- Commands which are not printing have to be added here to be printed
--- Add it without the "/", for an example look below ({'car'..., {'ooc'..., {'announce'...)
-CommandsNotPrinting = {
-					   {'car', '/car'}, 
-					   {'ooc', '**[OOC]:**'}, 
-					   {'announce', '**[ANNOUNCEMENT]:**'}, 
-					  }
-
 -- These Special Commands will be printed differently in Discord, depending on what you set it to
 SpecialCommands = {
 				   {'/ooc', '**[OOC]:**'},

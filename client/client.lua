@@ -82,7 +82,6 @@ local WeaponNames = {
     [tostring(GetHashKey('WEAPON_RUN_OVER_BY_CAR'))] = 'Run over by Car',
     [tostring(GetHashKey('WEAPON_HIT_BY_WATER_CANNON'))] = 'Hit by Water Cannon',
     [tostring(GetHashKey('WEAPON_EXHAUSTION'))] = 'Exhaustion',
-    [tostring(GetHashKey('WEAPON_FALL'))] = 'Fall',
     [tostring(GetHashKey('WEAPON_EXPLOSION'))] = 'Explosion',
     [tostring(GetHashKey('WEAPON_ELECTRIC_FENCE'))] = 'Electric Fence',
     [tostring(GetHashKey('WEAPON_BLEEDING'))] = 'Bleeding',

@@ -318,5 +318,3 @@ function IsVK(Weapon)
 	return false
 end
 
-
-

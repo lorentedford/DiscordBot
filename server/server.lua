@@ -85,32 +85,33 @@ AddEventHandler('chatMessage', function(Source, Name, Message)
 		Message = ReplaceSpecialCommand(Message, Source)
 	end
 	
+	-- Shortens the Name, if needed
+	if Name:len() > 23 then
+		Name = Name:sub(1, 23)
+	end
+
 	--Checking if the message contains a blacklisted command
 	if not IsCommand(Message, 'Blacklisted') then
 	
 		--Getting the steam avatar
 		local AvatarURL = UserAvatar
 		if GetIDFromSource('steam', Source) then
+			print('Using Steam')
 			local SteamIDHex = GetIDFromSource('steam', Source)
 			local SteamIDInt = tonumber(SteamIDHex, 16)
 			PerformHttpRequest('http://steamcommunity.com/profiles/' .. SteamIDInt .. '/?xml=1', function(Error, Content, Head)
-				local SteamProfileInfosSplitted = stringsplit(Content, '\n')
-				for i, Info in ipairs(SteamProfileInfosSplitted) do
-					if Info:find('<avatarFull>') then
-						local AvatarURL = Info:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
+				local SteamProfileSplitted = stringsplit(Content, '\n')
+				for i, Line in ipairs(SteamProfileSplitted) do
+					if Line:find('<avatarFull>') then
+						local AvatarURL = Line:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
+						ToDiscord(DiscordWebhookChat, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL) --Sending the message to discord
 						break
 					end
 				end
 			end)
+		else
+			ToDiscord(DiscordWebhookChat, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL) --Sending the message to discord
 		end
-		
-		-- Shortens the Name, if needed
-		if Name:len() > 23 then
-			Name = Name:sub(1, 23)
-		end
-
-		--Sending the message to discord
-		ToDiscord(DiscordWebhookChat, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL)
 	end
 end)
 
@@ -189,39 +190,39 @@ function GetIDFromSource(Type, ID) --(Thanks To WolfKnight [forum.FiveM.net])
 end
 
 -- Version Checking down here, better don't touch this
-local CurrentVersion = '1.4.3'
+local CurrentVersion = '1.4.4'
 local UpdateAvailable = false
 local GithubResourceName = 'DiscordBot'
 
 PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResourceName .. '_Resources/master/VERSION', function(Error, NewestVersion, Header)
 	PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResourceName .. '_Resources/master/CHANGES', function(Error, Changes, Header)
-		print('\n')
-		print('####################################################################')
-		print('############################ ' .. GithubResourceName .. ' ############################')
-		print('####################################################################')
-		print('#####                  Current Version: ' .. CurrentVersion .. '                  #####')
-		print('#####                   Newest Version: ' .. NewestVersion .. '                  #####')
-		print('####################################################################')
-		if CurrentVersion ~= NewestVersion then
-			PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResourceName .. '_Resources/master/PREVIOUSVERSION', function(Error, PreviousVersion, Header)
+		PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResourceName .. '_Resources/master/PREVIOUSVERSION', function(Error, PreviousVersion, Header)
+			print('\n')
+			print('##############')
+			print('## ' .. GithubResourceName)
+			print('##')
+			print('## Current Version: ' .. CurrentVersion)
+			print('## Newest Version: ' .. NewestVersion)
+			print('##')
+			if CurrentVersion ~= NewestVersion then
 				if CurrentVersion == PreviousVersion then
 					UpdateAvailable = true
 				end
-			end)
-			print('############################# Outdated #############################')
-			print('######################### Check the Topic ##########################')
-			if UpdateAvailable then
-				print('################### Or type "update ' .. GetCurrentResourceName() .. '" ###################')
+				print('## Outdated')
+				print('## Check the Topic')
+				if UpdateAvailable then
+					print('## Or type "update ' .. GetCurrentResourceName() .. '"')
+				end
+				print('## For the newest Version!')
+				print('##############')
+				print('CHANGES: ' .. Changes)
+			else
+				UpdateAvailable = false
+				print('## Up to date!')
+				print('##############')
 			end
-			print('##################### For the newest Version! ######################')
-			print('####################################################################')
-			print('CHANGES: ' .. Changes)
-		else
-			UpdateAvailable = false
-			print('#####                        Up to date!                       #####')
-			print('####################################################################')
-		end
-		print('\n')
+			print('\n')
+		end)
 	end)
 end)
 

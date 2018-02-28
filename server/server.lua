@@ -187,7 +187,12 @@ function GetOwnWebhook(String)
 	local StringSplitted = stringsplit(String, ' ')
 	for i, OwnWebhookCommand in ipairs(OwnWebhookCommands) do
 		if StringSplitted[1]:lower() == OwnWebhookCommand[1]:lower() then
-			return OwnWebhookCommand[2]
+			if OwnWebhookCommand[2] == 'WEBHOOK_LINK_HERE' then
+				print('Please enter a webhook link for the command: ' .. StringSplitted[1])
+				return DiscordWebhookChat
+			else
+				return OwnWebhookCommand[2]
+			end
 		end
 	end
 end

@@ -16,48 +16,47 @@ if DiscordWebhookSystemInfos == nil and DiscordWebhookKillinglogs == nil and Dis
 	Content()
 end
 if DiscordWebhookSystemInfos == 'WEBHOOK_LINK_HERE' then
-	print('\n\nERROR\n' .. GetCurrentResourceName() .. ': Please add your "System Infos" Webhook\n\n')
+	print('\n\nERROR\n' .. GetCurrentResourceName() .. ': Please add your "System Infos" webhook\n\n')
 else
 	PerformHttpRequest(DiscordWebhookSystemInfos, function(Error, Content, Head)
 		if Content == '{"code": 50027, "message": "Invalid Webhook Token"}' then
-			print('\n\nERROR\n' .. GetCurrentResourceName() .. ': "System Infos" Webhook non-existing!\n\n')
+			print('\n\nERROR\n' .. GetCurrentResourceName() .. ': "System Infos" webhook non-existing!\n\n')
 		end
 	end)
 end
 if DiscordWebhookKillinglogs == 'WEBHOOK_LINK_HERE' then
-	print('\n\nERROR\n' .. GetCurrentResourceName() .. ': Please add your "Killing Log" Webhook\n\n')
+	print('\n\nERROR\n' .. GetCurrentResourceName() .. ': Please add your "Killing Log" webhook\n\n')
 else
 	PerformHttpRequest(DiscordWebhookKillinglogs, function(Error, Content, Head)
 		if Content == '{"code": 50027, "message": "Invalid Webhook Token"}' then
-			print('\n\nERROR\n' .. GetCurrentResourceName() .. ': "Killing Log" Webhook non-existing!\n\n')
+			print('\n\nERROR\n' .. GetCurrentResourceName() .. ': "Killing Log" webhook non-existing!\n\n')
 		end
 	end)
 end
 if DiscordWebhookChat == 'WEBHOOK_LINK_HERE' then
-	print('\n\nERROR\n' .. GetCurrentResourceName() .. ': Please add your "Chat" Webhook\n\n')
+	print('\n\nERROR\n' .. GetCurrentResourceName() .. ': Please add your "Chat" webhook\n\n')
 else
 	PerformHttpRequest(DiscordWebhookChat, function(Error, Content, Head)
 		if Content == '{"code": 50027, "message": "Invalid Webhook Token"}' then
-			print('\n\nERROR\n' .. GetCurrentResourceName() .. ': "Chat" Webhook non-existing!\n\n')
+			print('\n\nERROR\n' .. GetCurrentResourceName() .. ': "Chat" webhook non-existing!\n\n')
 		end
 	end)
 end
 	
 -- System Infos
-PerformHttpRequest(DiscordWebhookSystemInfos, function(Error, Content, Head) end, 'POST', json.encode({username = SystemName, content = '**FiveM Server Webhook Started**'}), { ['Content-Type'] = 'application/json' })
+PerformHttpRequest(DiscordWebhookSystemInfos, function(Error, Content, Head) end, 'POST', json.encode({username = SystemName, content = '**FiveM server webhook started**'}), { ['Content-Type'] = 'application/json' })
 
 AddEventHandler('playerConnecting', function()
-	ToDiscord(DiscordWebhookSystemInfos, SystemName, '```css\n' .. GetPlayerName(source) .. ' connecting\n```', SystemAvatar)
+	TriggerEvent('DiscordBot:ToDiscord', DiscordWebhookSystemInfos, SystemName, '```css\n' .. GetPlayerName(source) .. ' connecting\n```', SystemAvatar, false)
 end)
 
 AddEventHandler('playerDropped', function(Reason)
-	ToDiscord(DiscordWebhookSystemInfos, SystemName, '```fix\n' .. GetPlayerName(source) .. ' left (' .. Reason .. ')\n```', SystemAvatar)
+	TriggerEvent('DiscordBot:ToDiscord', DiscordWebhookSystemInfos, SystemName, '```fix\n' .. GetPlayerName(source) .. ' left (' .. Reason .. ')\n```', SystemAvatar, false)
 end)
 
-
 -- Killing Log
-RegisterServerEvent('PlayerDied')
-AddEventHandler('PlayerDied', function(Message, Weapon)
+RegisterServerEvent('DiscordBot:playerDied')
+AddEventHandler('DiscordBot:playerDied', function(Message, Weapon)
 	local date = os.date('*t')
 	
 	if date.day < 10 then date.day = '0' .. tostring(date.day) end
@@ -68,16 +67,21 @@ AddEventHandler('PlayerDied', function(Message, Weapon)
 	if Weapon then
 		Message = Message .. ' [' .. Weapon .. ']'
 	end
-	ToDiscord(DiscordWebhookKillinglogs, SystemName, Message .. ' `' .. date.day .. '.' .. date.month .. '.' .. date.year .. ' - ' .. date.hour .. ':' .. date.min .. ':' .. date.sec .. '`', SystemAvatar)
+	TriggerEvent('DiscordBot:ToDiscord', DiscordWebhookKillinglogs, SystemName, Message .. ' `' .. date.day .. '.' .. date.month .. '.' .. date.year .. ' - ' .. date.hour .. ':' .. date.min .. ':' .. date.sec .. '`', SystemAvatar, false)
 end)
-
 
 -- Chat
 AddEventHandler('chatMessage', function(Source, Name, Message)
+	local Webhook = DiscordWebhookChat
 	--Removing Color Codes (^0, ^1, ^2 etc.) from the name and the message
 	for i = 0, 9 do
 		Message = Message:gsub('%^' .. i, '')
 		Name = Name:gsub('%^' .. i, '')
+	end
+	
+	--Checking if the message contains a command which has his own webhook
+	if IsCommand(Message, 'HavingOwnWebhook') then
+		Webhook = GetOwnWebhook(Message)
 	end
 	
 	--Checking if the message contains a special command
@@ -92,11 +96,9 @@ AddEventHandler('chatMessage', function(Source, Name, Message)
 
 	--Checking if the message contains a blacklisted command
 	if not IsCommand(Message, 'Blacklisted') then
-	
 		--Getting the steam avatar
 		local AvatarURL = UserAvatar
 		if GetIDFromSource('steam', Source) then
-			print('Using Steam')
 			local SteamIDHex = GetIDFromSource('steam', Source)
 			local SteamIDInt = tonumber(SteamIDHex, 16)
 			PerformHttpRequest('http://steamcommunity.com/profiles/' .. SteamIDInt .. '/?xml=1', function(Error, Content, Head)
@@ -104,27 +106,39 @@ AddEventHandler('chatMessage', function(Source, Name, Message)
 				for i, Line in ipairs(SteamProfileSplitted) do
 					if Line:find('<avatarFull>') then
 						local AvatarURL = Line:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
-						ToDiscord(DiscordWebhookChat, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL) --Sending the message to discord
+						TriggerEvent('DiscordBot:ToDiscord', Webhook, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL, false) --Sending the message to discord
 						break
 					end
 				end
 			end)
 		else
-			ToDiscord(DiscordWebhookChat, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL) --Sending the message to discord
+			TriggerEvent('DiscordBot:ToDiscord', Webhook, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL, false) --Sending the message to discord
 		end
 	end
 end)
 
--- Functions
-
-function ToDiscord(WebHook, Name, Message, Image)
+--Event to actually send Messages to Discord
+RegisterServerEvent('DiscordBot:ToDiscord')
+AddEventHandler('DiscordBot:ToDiscord', function(WebHook, Name, Message, Image, External)
 	if Message == nil or Message == '' then
-		return false
+		return nil
 	end
-	
+	if External then
+		Image = SystemAvatar
+		if WebHook:lower() == 'chat' then
+			WebHook = DiscordWebhookChat
+		elseif WebHook:lower() == 'system' then
+			WebHook = DiscordWebhookSystemInfos
+		elseif WebHook:lower() == 'kill' then
+			WebHook = DiscordWebhookKillinglogs
+		else
+			return nil
+		end
+	end
 	PerformHttpRequest(WebHook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image}), { ['Content-Type'] = 'application/json' })
-end
+end)
 
+-- Functions
 function IsCommand(String, Type)
 	local StringSplitted = stringsplit(String, ' ')
 	if Type == 'Blacklisted' then
@@ -136,6 +150,12 @@ function IsCommand(String, Type)
 	elseif Type == 'Special' then
 		for i, SpecialCommand in ipairs(SpecialCommands) do
 			if StringSplitted[1]:lower() == SpecialCommand[1]:lower() then
+				return true
+			end
+		end
+	elseif Type == 'HavingOwnWebhook' then
+		for i, OwnWebhookCommand in ipairs(OwnWebhookCommands) do
+			if StringSplitted[1]:lower() == OwnWebhookCommand[1]:lower() then
 				return true
 			end
 		end
@@ -159,6 +179,15 @@ function ReplaceSpecialCommand(String, Source)
 			newString = newString:gsub('USERNAME_NEEDED_HERE', GetPlayerName(Source))
 			newString = newString:gsub('USERID_NEEDED_HERE', Source)
 			return newString
+		end
+	end
+end
+
+function GetOwnWebhook(String)
+	local StringSplitted = stringsplit(String, ' ')
+	for i, OwnWebhookCommand in ipairs(OwnWebhookCommands) do
+		if StringSplitted[1]:lower() == OwnWebhookCommand[1]:lower() then
+			return OwnWebhookCommand[2]
 		end
 	end
 end
@@ -190,16 +219,16 @@ function GetIDFromSource(Type, ID) --(Thanks To WolfKnight [forum.FiveM.net])
 end
 
 -- Version Checking down here, better don't touch this
-local CurrentVersion = '1.4.4'
+local CurrentVersion = '1.5.0'
 local UpdateAvailable = false
 local GithubResourceName = 'DiscordBot'
 
-PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResourceName .. '_Resources/master/VERSION', function(Error, NewestVersion, Header)
-	PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResourceName .. '_Resources/master/CHANGES', function(Error, Changes, Header)
-		PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResourceName .. '_Resources/master/PREVIOUSVERSION', function(Error, PreviousVersion, Header)
+PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/FiveM_Resources/master/' .. GithubResourceName .. '/VERSION', function(Error, NewestVersion, Header)
+	PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/FiveM_Resources/master/' .. GithubResourceName .. '/CHANGES', function(Error, Changes, Header)
+		PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/FiveM_Resources/master/' .. GithubResourceName .. '/PREVIOUSVERSION', function(Error, PreviousVersion, Header)
 			print('\n')
 			print('##############')
-			print('## ' .. GithubResourceName)
+			print('## ' .. GetCurrentResourceName())
 			print('##')
 			print('## Current Version: ' .. CurrentVersion)
 			print('## Newest Version: ' .. NewestVersion)
@@ -231,7 +260,7 @@ AddEventHandler('rconCommand', function(CMDName, Arguments)
     if CMDName:lower() == 'update' then
 		if #Arguments == 1 then
 			if Arguments[1]:lower() == GetCurrentResourceName():lower() then
-				TriggerEvent(GetCurrentResourceName() .. ':StartUpdate')
+				TriggerEvent('DiscordBot:StartUpdate')
 			end
 		else
 			print('Argument count mismatch (Passed: ' .. #Arguments .. ', Wanted: 1)')
@@ -240,8 +269,8 @@ AddEventHandler('rconCommand', function(CMDName, Arguments)
 	end
 end)
 
-RegisterServerEvent(GetCurrentResourceName() .. ':StartUpdate')
-AddEventHandler(GetCurrentResourceName() .. ':StartUpdate', function()
+RegisterServerEvent('DiscordBot:StartUpdate')
+AddEventHandler('DiscordBot:StartUpdate', function()
 	if UpdateAvailable then
 		PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResourceName .. '_Resources/master/CHANGEDFILES', function(Error, Content, Header)
 			ContentSplitted = stringsplit(Content, '\n')

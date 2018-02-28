@@ -6,5 +6,9 @@ server_script {						-- Server Scripts
 	'config.lua',
 	'server/server.lua',
 }
-client_script 'client/client.lua'	-- Client Script
+
+client_script {						-- Client Scripts
+	'config.lua',
+	'client/client.lua',
+}
 

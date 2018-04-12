@@ -72,90 +72,138 @@ end)
 
 -- Chat
 AddEventHandler('chatMessage', function(Source, Name, Message)
-	local Webhook = DiscordWebhookChat
+	local Webhook = DiscordWebhookChat; TTS = false
+
 	--Removing Color Codes (^0, ^1, ^2 etc.) from the name and the message
 	for i = 0, 9 do
 		Message = Message:gsub('%^' .. i, '')
 		Name = Name:gsub('%^' .. i, '')
 	end
 	
-	--Checking if the message contains a command which has his own webhook
-	if IsCommand(Message, 'HavingOwnWebhook') then
-		Webhook = GetOwnWebhook(Message)
-	end
+	--Splitting the message in multiple strings
+	MessageSplitted = stringsplit(Message, ' ')
 	
-	--Checking if the message contains a special command
-	if IsCommand(Message, 'Special') then
-		Message = ReplaceSpecialCommand(Message, Source)
-	end
-	
-	-- Shortens the Name, if needed
-	if Name:len() > 23 then
-		Name = Name:sub(1, 23)
-	end
-
 	--Checking if the message contains a blacklisted command
-	if not IsCommand(Message, 'Blacklisted') then
-		--Getting the steam avatar
+	if not IsCommand(MessageSplitted, 'Blacklisted') then
+		--Checking if the message contains a command which has his own webhook
+		if IsCommand(MessageSplitted, 'HavingOwnWebhook') then
+			Webhook = GetOwnWebhook(MessageSplitted)
+		end
+		
+		--Checking if the message contains a special command
+		if IsCommand(MessageSplitted, 'Special') then
+			MessageSplitted = ReplaceSpecialCommand(MessageSplitted)
+		end
+		
+		---Checking if the message contains a command which belongs into a tts channel
+		if IsCommand(MessageSplitted, 'TTS') then
+			TTS = true
+		end
+		
+		--Combining the message to one string again
+		Message = ''
+		
+		for Key, Value in ipairs(MessageSplitted) do
+			Message = Message .. Value .. ' '
+		end
+		
+		--Adding the username if needed
+		Message = Message:gsub('USERNAME_NEEDED_HERE', GetPlayerName(Source))
+		
+		--Adding the userid if needed
+		Message = Message:gsub('USERID_NEEDED_HERE', Source)
+		
+		-- Shortens the Name, if needed
+		if Name:len() > 23 then
+			Name = Name:sub(1, 23)
+		end
+
+		--Getting the steam avatar if available
 		local AvatarURL = UserAvatar
 		if GetIDFromSource('steam', Source) then
-			local SteamIDHex = GetIDFromSource('steam', Source)
-			local SteamIDInt = tonumber(SteamIDHex, 16)
-			PerformHttpRequest('http://steamcommunity.com/profiles/' .. SteamIDInt .. '/?xml=1', function(Error, Content, Head)
+			PerformHttpRequest('http://steamcommunity.com/profiles/' .. tonumber(GetIDFromSource('steam', Source), 16) .. '/?xml=1', function(Error, Content, Head)
 				local SteamProfileSplitted = stringsplit(Content, '\n')
 				for i, Line in ipairs(SteamProfileSplitted) do
 					if Line:find('<avatarFull>') then
-						local AvatarURL = Line:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
-						TriggerEvent('DiscordBot:ToDiscord', Webhook, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL, false) --Sending the message to discord
+						AvatarURL = Line:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
+						TriggerEvent('DiscordBot:ToDiscord', Webhook, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL, false, Source, TTS) --Sending the message to discord
 						break
 					end
 				end
 			end)
 		else
-			TriggerEvent('DiscordBot:ToDiscord', Webhook, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL, false) --Sending the message to discord
+			--Using the default avatar if no steam avatar is available
+			TriggerEvent('DiscordBot:ToDiscord', Webhook, Name .. ' [ID: ' .. Source .. ']', Message, AvatarURL, false, Source, TTS) --Sending the message to discord
 		end
 	end
 end)
 
 --Event to actually send Messages to Discord
 RegisterServerEvent('DiscordBot:ToDiscord')
-AddEventHandler('DiscordBot:ToDiscord', function(WebHook, Name, Message, Image, External)
+AddEventHandler('DiscordBot:ToDiscord', function(WebHook, Name, Message, Image, External, Source, TTS)
 	if Message == nil or Message == '' then
 		return nil
 	end
+	if TTS == nil or TTS == '' then
+		TTS = false
+	end
 	if External then
-		Image = SystemAvatar
 		if WebHook:lower() == 'chat' then
 			WebHook = DiscordWebhookChat
 		elseif WebHook:lower() == 'system' then
 			WebHook = DiscordWebhookSystemInfos
 		elseif WebHook:lower() == 'kill' then
 			WebHook = DiscordWebhookKillinglogs
-		else
+		elseif not Webhook:find('discordapp.com/api/webhooks') then
+			print('ToDiscord event called without a specified webhook!')
 			return nil
 		end
+		
+		if Image:lower() == 'steam' then
+			Image = UserAvatar
+			if GetIDFromSource('steam', Source) then
+				PerformHttpRequest('http://steamcommunity.com/profiles/' .. tonumber(GetIDFromSource('steam', Source), 16) .. '/?xml=1', function(Error, Content, Head)
+					local SteamProfileSplitted = stringsplit(Content, '\n')
+					for i, Line in ipairs(SteamProfileSplitted) do
+						if Line:find('<avatarFull>') then
+							Image = Line:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
+							return PerformHttpRequest(WebHook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image, tts = TTS}), {['Content-Type'] = 'application/json'})
+						end
+					end
+				end)
+			end
+		elseif Image:lower() == 'user' then
+			Image = UserAvatar
+		else
+			Image = SystemAvatar
+		end
 	end
-	PerformHttpRequest(WebHook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image}), { ['Content-Type'] = 'application/json' })
+	PerformHttpRequest(WebHook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image, tts = TTS}), {['Content-Type'] = 'application/json'})
 end)
 
 -- Functions
 function IsCommand(String, Type)
-	local StringSplitted = stringsplit(String, ' ')
 	if Type == 'Blacklisted' then
 		for i, BlacklistedCommand in ipairs(BlacklistedCommands) do
-			if StringSplitted[1]:lower() == BlacklistedCommand:lower() then
+			if String[1]:lower() == BlacklistedCommand:lower() then
 				return true
 			end
 		end
 	elseif Type == 'Special' then
 		for i, SpecialCommand in ipairs(SpecialCommands) do
-			if StringSplitted[1]:lower() == SpecialCommand[1]:lower() then
+			if String[1]:lower() == SpecialCommand[1]:lower() then
 				return true
 			end
 		end
 	elseif Type == 'HavingOwnWebhook' then
 		for i, OwnWebhookCommand in ipairs(OwnWebhookCommands) do
-			if StringSplitted[1]:lower() == OwnWebhookCommand[1]:lower() then
+			if String[1]:lower() == OwnWebhookCommand[1]:lower() then
+				return true
+			end
+		end
+	elseif Type == 'TTS' then
+		for i, TTSCommand in ipairs(TTSCommands) do
+			if String[1]:lower() == TTSCommand:lower() then
 				return true
 			end
 		end
@@ -163,32 +211,20 @@ function IsCommand(String, Type)
 	return false
 end
 
-function ReplaceSpecialCommand(String, Source)
-	local StringSplitted = stringsplit(String, ' ')
+function ReplaceSpecialCommand(String)
 	for i, SpecialCommand in ipairs(SpecialCommands) do
-		if StringSplitted[1]:lower() == SpecialCommand[1]:lower() then
-			StringSplitted[1] = SpecialCommand[2]
-			local newString = ''
-			for k, StringPart in ipairs(StringSplitted) do
-				if newString == '' then
-					newString = StringPart
-				else
-					newString = newString .. ' ' .. StringPart
-				end
-			end
-			newString = newString:gsub('USERNAME_NEEDED_HERE', GetPlayerName(Source))
-			newString = newString:gsub('USERID_NEEDED_HERE', Source)
-			return newString
+		if String[1]:lower() == SpecialCommand[1]:lower() then
+			String[1] = SpecialCommand[2]
 		end
 	end
+	return String
 end
 
 function GetOwnWebhook(String)
-	local StringSplitted = stringsplit(String, ' ')
 	for i, OwnWebhookCommand in ipairs(OwnWebhookCommands) do
-		if StringSplitted[1]:lower() == OwnWebhookCommand[1]:lower() then
+		if String[1]:lower() == OwnWebhookCommand[1]:lower() then
 			if OwnWebhookCommand[2] == 'WEBHOOK_LINK_HERE' then
-				print('Please enter a webhook link for the command: ' .. StringSplitted[1])
+				print('Please enter a webhook link for the command: ' .. String[1])
 				return DiscordWebhookChat
 			else
 				return OwnWebhookCommand[2]
@@ -224,75 +260,29 @@ function GetIDFromSource(Type, ID) --(Thanks To WolfKnight [forum.FiveM.net])
 end
 
 -- Version Checking down here, better don't touch this
-local CurrentVersion = '1.5.0'
-local UpdateAvailable = false
+local CurrentVersion = '1.5.1'
 local GithubResourceName = 'DiscordBot'
 
 PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/FiveM_Resources/master/' .. GithubResourceName .. '/VERSION', function(Error, NewestVersion, Header)
 	PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/FiveM_Resources/master/' .. GithubResourceName .. '/CHANGES', function(Error, Changes, Header)
-		PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/FiveM_Resources/master/' .. GithubResourceName .. '/PREVIOUSVERSION', function(Error, PreviousVersion, Header)
-			print('\n')
+		print('\n')
+		print('##############')
+		print('## ' .. GetCurrentResourceName())
+		print('##')
+		print('## Current Version: ' .. CurrentVersion)
+		print('## Newest Version: ' .. NewestVersion)
+		print('##')
+		if CurrentVersion ~= NewestVersion then
+			print('## Outdated')
+			print('## Check the Topic')
+			print('## For the newest Version!')
 			print('##############')
-			print('## ' .. GetCurrentResourceName())
-			print('##')
-			print('## Current Version: ' .. CurrentVersion)
-			print('## Newest Version: ' .. NewestVersion)
-			print('##')
-			if CurrentVersion ~= NewestVersion then
-				if CurrentVersion == PreviousVersion then
-					UpdateAvailable = true
-				end
-				print('## Outdated')
-				print('## Check the Topic')
-				if UpdateAvailable then
-					print('## Or type "update ' .. GetCurrentResourceName() .. '"')
-				end
-				print('## For the newest Version!')
-				print('##############')
-				print('CHANGES: ' .. Changes)
-			else
-				UpdateAvailable = false
-				print('## Up to date!')
-				print('##############')
-			end
-			print('\n')
-		end)
-	end)
-end)
-
--- Instant Update down here, better don't touch this as well
-AddEventHandler('rconCommand', function(CMDName, Arguments)
-    if CMDName:lower() == 'update' then
-		if #Arguments == 1 then
-			if Arguments[1]:lower() == GetCurrentResourceName():lower() then
-				TriggerEvent('DiscordBot:StartUpdate')
-			end
+			print('CHANGES: ' .. Changes)
 		else
-			print('Argument count mismatch (Passed: ' .. #Arguments .. ', Wanted: 1)')
+			print('## Up to date!')
+			print('##############')
 		end
-		CancelEvent()
-	end
-end)
-
-RegisterServerEvent('DiscordBot:StartUpdate')
-AddEventHandler('DiscordBot:StartUpdate', function()
-	if UpdateAvailable then
-		PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResourceName .. '_Resources/master/CHANGEDFILES', function(Error, Content, Header)
-			ContentSplitted = stringsplit(Content, '\n')
-			for k, Line in ipairs(ContentSplitted) do
-				local PreviousContent = ''
-				if Line:find('-add') then
-					Line = Line:gsub('-add')
-					PreviousContent = LoadResourceFile(GetCurrentResourceName(), Line) .. '\n'
-				end
-				PerformHttpRequest('https://raw.githubusercontent.com/Flatracer/' .. GithubResourceName .. '/master/' .. Line, function(Error, NewContent, Header)
-					SaveResourceFile(GetCurrentResourceName(), Line, PreviousContent .. NewContent, -1)
-				end)
-			end
-		end)
-		print('Update finished! Enter "restart ' .. GetCurrentResourceName() .. '" now!')
-	else
-		print('This is already the newest version! [' .. CurrentVersion .. ']')
-	end
+		print('\n')
+	end)
 end)
 

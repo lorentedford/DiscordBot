@@ -2,15 +2,11 @@ DiscordWebhookSystemInfos = 'WEBHOOK_LINK_HERE'
 DiscordWebhookKillinglogs = 'WEBHOOK_LINK_HERE'
 DiscordWebhookChat = 'WEBHOOK_LINK_HERE'
 
-DiscordWebhookSystemInfos = 'https://discordapp.com/api/webhooks/413119686205636639/j0Lzibpk_u9RFSu8Wx9gIMGw5MznP11vf0XCxfQmeqDB3sjAGRAMoeVlfpXiagL1meEZ'
-DiscordWebhookKillinglogs = 'https://discordapp.com/api/webhooks/413119576361009153/5v6kNS1D8s5yxnhcvfnoiZbO0Ejsl63DzALa20ZPbHV9ahHxQrVyw-hi88ogBEodxb81'
-DiscordWebhookChat = 'https://discordapp.com/api/webhooks/413119341563871244/eduRugpAkzCVGPcBVN8GgmbYXAuJBNDV0lL2xwiP7rC3pqanDvGaYo0bAtRPFn_UmpXB' 
-
 SystemAvatar = 'https://wiki.fivem.net/w/images/d/db/FiveM-Wiki.png'
 
 UserAvatar = 'https://i.imgur.com/KIcqSYs.png'
 
-SystemName = 'SYSTEM'
+SystemName = 'FiveM To Discord'
 
 
 --[[ Special Commands formatting
